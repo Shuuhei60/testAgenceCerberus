@@ -44,11 +44,43 @@ function casesAttaqueesParBlancs($plateau, $taille, $ligne, $colonne) {
     return $cases;
 }
 
+// Fonction pour vérifier si le roi est en échec
+function estEnEchec($plateau, $taille, $roiLigne, $roiColonne) {
+    for ($i = 0; $i < $taille; $i++) {
+        for ($j = 0; $j < $taille; $j++) {
+            if (ctype_upper($plateau[$i][$j])) { // Pièce blanche
+                $casesAttaquees = casesAttaqueesParBlancs($plateau, $taille, $i, $j);
+                foreach ($casesAttaquees as [$x, $y]) {
+                    if ($roiLigne === $x && $roiColonne === $y) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+// Fonction pour vérifier si le roi peut échapper à l'échec
+function peutEchapper($plateau, $taille, $roiLigne, $roiColonne) {
+    $casesEchappement = [
+        [-1, -1], [-1, 0], [-1, 1], [0, -1], [0, 1], [1, -1], [1, 0], [1, 1]
+    ];
+    foreach ($casesEchappement as [$dx, $dy]) {
+        $x = $roiLigne + $dx;
+        $y = $roiColonne + $dy;
+        if ($x >= 0 && $x < $taille && $y >= 0 && $y < $taille && $plateau[$x][$y] === '.') {
+            if (!estEnEchec($plateau, $taille, $x, $y)) {
+                return true; // Le roi peut s'échapper
+            }
+        }
+    }
+    return false; // Le roi ne peut pas s'échapper
+}
+
 // Fonction principale pour déterminer le gagnant
 function trouverGagnant($plateau) {
     $taille = 8; // Taille du plateau
-    $roiBlancEnEchec = false;
-    $roiNoirEnEchec = false;
 
     // Localiser les rois
     $positionRoiNoir = null;
@@ -60,26 +92,27 @@ function trouverGagnant($plateau) {
         }
     }
 
-    // Vérifier si le roi noir est attaqué
-    for ($i = 0; $i < $taille; $i++) {
-        for ($j = 0; $j < $taille; $j++) {
-            if (ctype_upper($plateau[$i][$j])) { // Pièce blanche
-                $casesAttaquees = casesAttaqueesParBlancs($plateau, $taille, $i, $j);
-                foreach ($casesAttaquees as [$x, $y]) {
-                    if ($positionRoiNoir === [$x, $y]) {
-                        $roiNoirEnEchec = true;
-                        break 2;
-                    }
-                }
-            }
+    // Vérifier si le roi noir est en échec
+    $roiNoirEnEchec = estEnEchec($plateau, $taille, $positionRoiNoir[0], $positionRoiNoir[1]);
+
+    // Vérifier si le roi noir a un mouvement de fuite
+    if ($roiNoirEnEchec) {
+        if (!peutEchapper($plateau, $taille, $positionRoiNoir[0], $positionRoiNoir[1])) {
+            return 'W'; // Le roi noir est en échec et mat
         }
+        return 'N'; // Le roi noir est en échec mais peut échapper
     }
 
-    // Si le roi noir est en échec et ne peut pas échapper, les blancs gagnent
-    if ($roiNoirEnEchec) return 'W';
+    // Vérifier si le roi blanc est en échec
+    $roiBlancEnEchec = estEnEchec($plateau, $taille, $positionRoiBlanc[0], $positionRoiBlanc[1]);
 
-    // Logique similaire pour le roi blanc (si nécessaire)
-    // ...
+    // Vérifier si le roi blanc a un mouvement de fuite
+    if ($roiBlancEnEchec) {
+        if (!peutEchapper($plateau, $taille, $positionRoiBlanc[0], $positionRoiBlanc[1])) {
+            return 'B'; // Le roi blanc est en échec et mat
+        }
+        return 'N'; // Le roi blanc est en échec mais peut échapper
+    }
 
     return 'N'; // Aucun roi en échec ou échec mat
 }
@@ -94,4 +127,7 @@ for ($i = 0; $i < 8; $i++) {
 // Déterminer le gagnant
 echo trouverGagnant($plateau);
 
+//tentative d'une nouvelle approche 46% d'après codingame
 ?>
+
+
